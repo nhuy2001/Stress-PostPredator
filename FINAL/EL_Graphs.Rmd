@@ -1,0 +1,104 @@
+---
+title: "EL_Graphs"
+author: "Huy Nguyen"
+date: "2022-07-20"
+output: html_document
+---
+
+Load Data
+```{r}
+library(readxl)
+library(tidyverse)
+library(psych)
+
+dat = readRDS("EL.rds")
+```
+
+Clean Data
+```{r}
+nuDat = dat %>% 
+  group_by(Status) %>%
+  summarise(
+    n = n(),
+    #Mean 
+    mnOpen = mean(nOpen),
+    mnClosed = mean(nClosed),
+    mtOpen = mean(tOpen),
+    mtClosed = mean(tClosed),
+    #SD
+    sdnOpen = sd(nOpen),
+    sdnClosed = sd(nClosed),
+    sdtOpen = sd(tOpen),
+    sdtClosed = sd(tClosed)
+  ) %>%
+  mutate(
+    #SE
+    senOpen = sdnOpen / sqrt(n),
+    senClosed= sdnClosed / sqrt(n),
+    setOpen= sdtOpen / sqrt(n),
+    setClosed = sdtClosed / sqrt(n)
+  )
+```
+
+###Graphing
+```{r}
+Graphs = list(nOpen = NA, nClosed = NA, tOpen = NA, tClosed = NA)
+```
+
+####nOpen
+```{r}
+Graphs$nOpen = ggplot(data = nuDat, aes(x = Status, y = mnOpen, fill = Status))+
+  geom_col()+
+  geom_errorbar( aes(x = Status, ymin = mnOpen - senOpen, ymax = mnOpen + senOpen), width = 0.4, alpha = 0.9)+
+  theme_classic()+
+  theme(plot.title = element_text(face = "bold"), axis.title.x = element_blank(), legend.position = "none")+
+  scale_y_continuous(name="Count")+
+  labs(title="Mean Open Arm Entries")
+Graphs$nOpen
+
+export::graph2png(Graphs$nOpen, "C:/Users/Test/OneDrive/SPU/Independent Research/Baker/Predator & Decision-making/H Cohort/FINAL/Graphs/EL/nOpen")
+```
+
+####nClosed
+```{r}
+Graphs$nClosed = ggplot(data = nuDat, aes(x = Status, y = mnClosed, fill = Status))+
+  geom_col()+
+  geom_errorbar( aes(x = Status, ymin = mnClosed - senClosed, ymax = mnClosed + senClosed), width = 0.4, alpha = 0.9)+
+  theme_classic()+
+  theme(plot.title = element_text(face = "bold"), axis.title.x = element_blank(), legend.position = "none")+
+  scale_y_continuous(name="Count")+
+  labs(title="Mean Closed Arm Entries")
+Graphs$nClosed
+
+export::graph2png(Graphs$nClosed, "C:/Users/Test/OneDrive/SPU/Independent Research/Baker/Predator & Decision-making/H Cohort/FINAL/Graphs/EL/nClosed")
+```
+
+####tOpen 
+```{r}
+Graphs$tOpen = ggplot(data = nuDat, aes(x = Status, y = mtOpen, fill = Status))+
+  geom_col()+
+  geom_errorbar( aes(x = Status, ymin = mtOpen - setOpen, ymax = mtOpen + setOpen), width = 0.4, alpha = 0.9)+
+  coord_flip()+
+  theme_classic()+
+  theme(plot.title = element_text(face = "bold"), axis.title.y = element_blank(), legend.position = "none")+
+  scale_y_continuous(name="Mean Time (sec)")+
+  labs(title="Mean Time Spent in Open Arms")
+Graphs$tOpen
+
+export::graph2png(Graphs$tOpen, "C:/Users/Test/OneDrive/SPU/Independent Research/Baker/Predator & Decision-making/H Cohort/FINAL/Graphs/EL/tOpen")
+```
+
+####tClosed 
+```{r}
+Graphs$tClosed = ggplot(data = nuDat, aes(x = Status, y = mtClosed, fill = Status))+
+  geom_col()+
+  geom_errorbar( aes(x = Status, ymin = mtClosed - setClosed, ymax = mtClosed + setClosed), width = 0.4, alpha = 0.9)+
+  coord_flip()+
+  theme_classic()+
+  theme(plot.title = element_text(face = "bold"), axis.title.y = element_blank(), legend.position = "none")+
+  scale_y_continuous(name="Mean Time (sec)")+
+  labs(title="Mean Time Spent in Closed Arms")
+Graphs$tClosed
+
+export::graph2png(Graphs$tClosed, "C:/Users/Test/OneDrive/SPU/Independent Research/Baker/Predator & Decision-making/H Cohort/FINAL/Graphs/EL/tClosed")
+```

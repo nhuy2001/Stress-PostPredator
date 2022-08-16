@@ -1,0 +1,177 @@
+---
+title: "Marble"
+author: "Huy Nguyen"
+date: "2022-07-26"
+output: html_document
+---
+
+Load Data
+```{r}
+library(readxl)
+library(tidyverse)
+library(psych)
+library(survival)
+library(coin)
+```
+
+```{r}
+dat = read_xlsx("Marble.xlsx")
+dat[4:5] = list(NULL)
+dat[5:12] = list(NULL)
+
+dat = rename(dat, "ID" = "Rat", "Condition" = "Exposure Condition", 
+                  "mMarble" = "M Mean Marbles", "tGroom" = "M MBTG", 
+                  "tStand" = "M MBTR", "tDig" = "M MBTD", "tChew" = "M MBTI")
+
+dat$Sex = as.factor(dat$Sex) %>% recode(., "1" = "Female", "0" = "Male") #Rename variables
+dat$Condition = as.factor(dat$Condition) %>% recode(., "1" = "Owl", "0" = "Control") #Rename variables 
+
+dat$ID = factor(dat$ID, levels = c('F1','F2','F3','F4','F5','F6','F7','F8','F9','F10', 'H1','H2','H3','H4','H5','H6','H7','H8','H9','H10'))
+```
+
+### **ANALYSIS**
+#### Filter Data
+```{r} 
+dat$Status = paste(dat$Sex, dat$Condition, sep = "_")
+
+saveRDS(dat, "M.rds")
+```
+
+#### Buried Marble
+```{r}
+tapply(dat$mMarble, dat$Status, mean)
+tapply(dat$mMarble, dat$Status, median)
+tapply(dat$mMarble, dat$Status, sd)
+```
+
+#### tStand
+```{r}
+tapply(dat$tStand, dat$Status, mean)
+tapply(dat$tStand, dat$Status, median)
+tapply(dat$tStand, dat$Status, sd)
+```
+
+#### tGroom
+```{r}
+tapply(dat$tGroom, dat$Status, mean)
+tapply(dat$tGroom, dat$Status, median)
+tapply(dat$tGroom, dat$Status, sd)
+```
+
+#### tChew
+```{r}
+tapply(dat$tChew, dat$Status, mean)
+tapply(dat$tChew, dat$Status, median)
+tapply(dat$tChew, dat$Status, sd)
+```
+
+#### tDig
+```{r}
+tapply(dat$tDig, dat$Status, mean)
+tapply(dat$tDig, dat$Status, median)
+tapply(dat$tDig, dat$Status, sd)
+```
+
+#### Skew
+```{r}
+tapply(dat$mMarble, dat$Status, skew) 
+tapply(dat$tStand, dat$Status, skew) 
+tapply(dat$tGroom, dat$Status, skew) 
+tapply(dat$tChew, dat$Status, skew)
+tapply(dat$tDig, dat$Status, skew)
+```
+
+#### Test for Equal Variance
+```{r}
+bartlett.test(mMarble ~ Status, data = dat) #p-value = 0.914
+bartlett.test(tStand ~ Status, data = dat) #p-value = 0.252
+bartlett.test(tGroom ~ Status, data = dat) #p-value = 0.05483
+bartlett.test(tChew ~ Status, data = dat) #p-value = 0.8768
+bartlett.test(tDig ~ Status, data = dat) #p-value = 0.2192
+```
+
+#### ANOVA
+```{r}
+ANOVA = list()
+```
+
+```{r}
+#mMarble
+ANOVA$mMarble = lm(mMarble ~ Status, data = dat) #p-value: 0.02145
+summary(ANOVA$mMarble)
+
+kruskal.test(mMarble ~ Status, data = dat) #p-value = 0.05495
+
+oneway.test(mMarble ~ Status, data = dat, var.equal = T) #p-value = 0.02145
+```
+
+```{r}
+#tStand
+ANOVA$tStand = lm(tStand ~ Status, data = dat) #p-value: 0.5527
+summary(ANOVA$tStand)
+
+kruskal.test(tStand ~ Status, data = dat) #p-value = 0.4481
+
+oneway.test(tStand ~ Status, data = dat, var.equal = T) #p-value = 0.5527
+```
+
+```{r}
+#tGroom
+ANOVA$tGroom = lm(tGroom ~ Status, data = dat) #p-value: 0.5527
+summary(ANOVA$tGroom)
+
+kruskal.test(tGroom ~ Status, data = dat) #p-value = 0.2361
+
+oneway.test(tGroom ~ Status, data = dat, var.equal = F) #p-value = 0.3157
+```
+
+```{r}
+#tDig
+ANOVA$tDig = lm(tDig ~ Status, data = dat) #p-value: 0.5516
+summary(ANOVA$tDig)
+
+kruskal.test(tDig ~ Status, data = dat) #p-value = 0.9244
+
+oneway.test(tDig ~ Status, data = dat, var.equal = T) #p-value = 0.5516
+```
+
+```{r}
+#tChew
+ANOVA$tChew = lm(tChew ~ Status, data = dat) #p-value: 0.3079
+summary(ANOVA$tChew)
+
+kruskal.test(tChew ~ Status, data = dat) #p-value = 0.2691
+
+oneway.test(tChew ~ Status, data = dat, var.equal = T) #p-value = 0.3079
+```
+
+####Tukey HSD
+```{r}
+#mMarble
+ANOVA$Mar = aov(mMarble ~ Status, data = dat)
+TukeyHSD(ANOVA$Mar, conf.level = .95)
+```
+
+```{r}
+#tStand
+ANOVA$Stand = aov(tStand ~ Status, data = dat)
+TukeyHSD(ANOVA$Stand, conf.level = .95)
+```
+
+```{r}
+#tGroom
+ANOVA$Groom = aov(tGroom ~ Status, data = dat)
+TukeyHSD(ANOVA$Groom, conf.level = .95)
+```
+
+```{r}
+#tDig
+ANOVA$Dig = aov(tDig ~ Status, data = dat)
+TukeyHSD(ANOVA$Dig, conf.level = .95)
+```
+
+```{r}
+#tChew
+ANOVA$Chew = aov(tChew ~ Status, data = dat)
+TukeyHSD(ANOVA$Chew, conf.level = .95)
+```

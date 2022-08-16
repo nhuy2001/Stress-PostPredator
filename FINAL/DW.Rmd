@@ -1,0 +1,141 @@
+---
+title: "DW"
+author: "Huy Nguyen"
+date: "2022-07-20"
+output: html_document
+---
+
+Load Data
+```{r}
+library(readxl)
+library(tidyverse)
+library(psych)
+library(survival)
+library(coin)
+
+dat = readRDS("dat.rds")
+```
+
+DW Dataframe
+```{r}
+dat = dat[, c("ID", "Sex", "Condition", "DW_Latency", "DW_LatencyD2", 
+             "DW_tHide", "DW_tHideD2", "DW_nExit", "DW_nExitD2")]
+```
+
+### **ANALYSIS**
+#### Filter Data
+```{r} 
+test = dat %>% group_by(ID) %>%
+  summarise(
+    Sex, 
+    Condition, 
+    Status = paste(Sex, Condition, sep = "_"),
+    Latency = mean(c(DW_Latency, DW_LatencyD2)),
+    tHide = mean(c(DW_tHide, DW_tHideD2)),
+    nExit = mean(c(DW_nExit, DW_nExitD2))
+  ) 
+test$Status = as.factor(test$Status)
+
+saveRDS(test, "DW.rds")
+```
+
+#### Mean, Median, & SD
+##### Latency 
+```{r}
+tapply(test$Latency, test$Status, mean)
+tapply(test$Latency, test$Status, median)
+tapply(test$Latency, test$Status, sd)
+```
+Only slight difference between mean & median. Owl groups & females take longer to come out but only in mere seconds. 
+
+##### Hide
+```{r}
+tapply(test$tHide, test$Status, mean)
+tapply(test$tHide, test$Status, median)
+tapply(test$tHide, test$Status, sd)
+```
+Some noticeable differences between mean (1st row) & median (2nd row); especially females. However, no skew was found. Opposite trend for male & female with with control spend more time hiding for female and vice versa. 
+
+##### Exit
+```{r}
+tapply(test$nExit, test$Status, mean)
+tapply(test$nExit, test$Status, median)
+tapply(test$nExit, test$Status, sd)
+```
+Very similar results, differences are within 1 second so I don't expect to see significant results here. 
+
+#### Skew
+```{r}
+tapply(test$Latency, test$Status, skew) #Latency
+tapply(test$tHide, test$Status, skew) #Hide
+tapply(test$nExit, test$Status, skew) #Exit
+```
+No skew
+
+#### Test for Equal Variance
+```{r}
+bartlett.test(Latency ~ Status, data = test) #p-value = 0.0472
+bartlett.test(tHide ~ Status, data = test) #p-value = 0.3776
+bartlett.test(nExit ~ Status, data = test) #p-value = 0.6562
+```
+Only Leave Latency violated the normality assumption. Multiple ANOVA tests were ran just to be sure. 
+
+#### ANOVA
+```{r}
+ANOVA = list()
+```
+
+```{r}
+#Leave Latency
+ANOVA$LeaveLatency = lm(Latency ~ Status, data = test) #F-statistic: 3.177 on 3 and 15 DF,  p-value: 0.05487
+summary(ANOVA$LeaveLatency)
+
+kruskal.test(Latency ~ Status, data = test) #p-value = 0.03678
+
+oneway.test(Latency ~ Status, data = test, var.equal = FALSE) #p-value =0.0275
+```
+Leave Latency differences are significant across groups
+
+```{r}
+#Hide
+ANOVA$Hide = lm(tHide ~ Status, data = test) #p-value: 0.1366
+summary(ANOVA$Hide)
+
+kruskal.test(tHide ~ Status, data = test) #p-value = 0.1411
+
+oneway.test(tHide ~ Status, data = test, var.equal = FALSE) #p-value = 0.1195
+```
+Hide time differences are insignificant across groups 
+
+```{r}
+#Exit
+ANOVA$Exit = lm(nExit ~ Status, data = test) #p-value: 0.9474
+summary(ANOVA$Exit)
+
+kruskal.test(nExit ~ Status, data = test) #p-value = 0.9731
+
+oneway.test(nExit ~ Status, data = test, var.equal = FALSE) #p-value = 0.9049
+```
+Number of exits differences are insignificant across groups 
+
+####Tukey HSD
+```{r}
+#Leave Latency
+ANOVA$LL_aov = aov(Latency ~ Status, data = test)
+TukeyHSD(ANOVA$LL_aov, conf.level = .95)
+```
+Only Male_control-female_owl differences are significant
+
+```{r}
+#Hide
+ANOVA$H_aov = aov(tHide ~ Status, data = test)
+TukeyHSD(ANOVA$H_aov, conf.level = .95)
+```
+No significant differences
+
+```{r}
+#Exit
+ANOVA$E_aov = aov(nExit ~ Status, data = test)
+TukeyHSD(ANOVA$E_aov, conf.level = .95)
+```
+No significant differences

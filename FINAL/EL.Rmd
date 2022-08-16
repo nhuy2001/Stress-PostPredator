@@ -1,0 +1,194 @@
+---
+title: "EL"
+author: "Huy Nguyen"
+date: "2022-07-20"
+output: html_document
+---
+
+Load Data
+```{r}
+library(readxl)
+library(tidyverse)
+library(psych)
+library(survival)
+library(coin)
+
+dat = readRDS("dat.rds")
+```
+
+DW Dataframe
+```{r}
+dat = dat[, c("ID", "Sex", "Condition", "EL_nOpen", "EL_nClosed", 
+             "EL_tOpen", "EL_tClosed", "EL_nOpenD2", "EL_nClosedD2", 
+             "EL_tOpenD2", "EL_tClosedD2")]
+```
+
+### **ANALYSIS**
+#### Filter Data
+```{r}
+test = dat %>% group_by(ID) %>%
+  summarise(
+    Sex, 
+    Condition, 
+    Status = paste(Sex, Condition, sep = "_"),
+    nOpen = mean(c(EL_nOpen, EL_nOpenD2)),
+    nClosed = mean(c(EL_nClosed, EL_nClosedD2)),
+    tOpen = mean(c(EL_tOpen, EL_tOpenD2)),
+    tClosed = mean(c(EL_tClosed, EL_tClosedD2))
+  ) 
+test$Status = as.factor(test$Status)
+
+saveRDS(test, "EL.rds")
+```
+
+#### Mean, Median, & SD
+##### nOpen 
+```{r}
+tapply(test$nOpen, test$Status, mean)
+tapply(test$nOpen, test$Status, median)
+tapply(test$nOpen, test$Status, sd)
+```
+Pretty similar number of entries across groups so I don't expect to see any significant difference. 
+
+##### nClosed
+```{r}
+tapply(test$nClosed, test$Status, mean)
+tapply(test$nClosed, test$Status, median)
+tapply(test$nClosed, test$Status, sd)
+```
+Same story for closed entries. 
+
+##### tOpen
+```{r}
+tapply(test$tOpen, test$Status, mean)
+tapply(test$tOpen, test$Status, median)
+tapply(test$tOpen, test$Status, sd)
+```
+Male control spent more time in open arms (consistent with previous research) while opposite for females, even then differences are only 20s. Don't see any noticeable different in time for males & females. 
+
+#####tClosed
+```{r}
+tapply(test$tClosed, test$Status, mean)
+tapply(test$tClosed, test$Status, median)
+tapply(test$tClosed, test$Status, sd)
+```
+Rats spend a fuckton more time in closed arms than open arms. Similar trend within groups here. 
+
+#### Skew
+```{r}
+tapply(test$nOpen, test$Status, skew) #nOpen
+tapply(test$nClosed, test$Status, skew) #nClosed
+tapply(test$tOpen, test$Status, skew) #tOpen
+tapply(test$tClosed, test$Status, skew) #tClosed
+```
+No skew was found
+
+#### Test for Equal Variance
+```{r}
+bartlett.test(nOpen ~ Status, data = test) #p-value = 0.9637
+bartlett.test(nClosed ~ Status, data = test) #p-value = 0.932
+bartlett.test(tOpen ~ Status, data = test) #p-value = 0.8951
+bartlett.test(tClosed ~ Status, data = test) #p-value = 0.8559
+```
+
+#### ANOVA
+```{r}
+ANOVA = list()
+```
+
+```{r}
+#nOpen
+ANOVA$nOpen = lm(nOpen ~ Status, data = test) #p-value: 0.6373
+summary(ANOVA$nOpen)
+```
+
+```{r}
+#nClosed
+ANOVA$nClosed = lm(nClosed ~ Status, data = test) #p-value: 0.5241
+summary(ANOVA$nClosed)
+```
+
+```{r}
+#tOpen
+ANOVA$tOpen = lm(tOpen ~ Status, data = test) #p-value: 0.4819
+summary(ANOVA$tOpen)
+```
+
+```{r}
+#tClosed
+ANOVA$tClosed = lm(tClosed ~ Status, data = test) #p-value: 0.5704
+summary(ANOVA$tClosed)
+```
+
+#### Tukey HSD
+```{r}
+#nOpen
+ANOVA$nOpen = aov(nOpen ~ Status, data = test)
+summary(ANOVA$nOpen)
+TukeyHSD(ANOVA$nOpen, conf.level = .95)
+```
+
+```{r}
+#Hide
+ANOVA$nClosed = aov(nClosed ~ Status, data = test)
+summary(ANOVA$nClosed)
+TukeyHSD(ANOVA$nClosed, conf.level = .95)
+```
+
+```{r}
+#Exit
+ANOVA$tOpen = aov(tOpen ~ Status, data = test)
+summary(ANOVA$tOpen)
+TukeyHSD(ANOVA$tOpen, conf.level = .95)
+```
+
+```{r}
+#Exit
+ANOVA$tClosed = aov(tClosed ~ Status, data = test)
+summary(ANOVA$tClosed)
+TukeyHSD(ANOVA$tClosed, conf.level = .95)
+```
+
+### Difference between tOpen & tClosed
+#### Mean, Median & SD
+```{r}
+#Mean
+sapply(select(test, tOpen, tClosed), mean) #t
+sapply(select(test, nOpen, nClosed), mean) #n
+```
+
+```{r}
+#Median
+sapply(select(test, tOpen, tClosed), median) #t
+sapply(select(test, nOpen, nClosed), median) #n
+```
+
+```{r}
+#SD
+sapply(select(test, tOpen, tClosed), sd) #t
+sapply(select(test, nOpen, nClosed), sd) #n
+```
+
+#### Skew
+```{r}
+sapply(select(test, tOpen, tClosed), skew) #t
+sapply(select(test, nOpen, nClosed), skew) #n
+```
+No skew
+
+#### t.test
+```{r}
+#Time in Arms
+t.test(test$tOpen, test$tClosed, paired = T)
+```
+SIGNIFICANTLY DIFFERENT!
+
+```{r}
+#Arm entries 
+t.test(test$nOpen, test$nClosed, paired = T)
+```
+
+```{r}
+lm(cbind(tOpen, tClosed) ~ Status, data = test)
+```
+
