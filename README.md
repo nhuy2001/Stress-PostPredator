@@ -1,5 +1,4 @@
-# Stress-PostPredator
-**Title**: Stress-Related Sex Differences in Defensive and Exploratory Behaviors in the Presence of a Predatory Stimulus
+# Sex Differences in Stress-Related Behaviors after Exposure to a Predatory Stimulus
 
 Our study employed an ethologically relevant fear stimulus to simulate a predator attack on both male and female Long Evan rats over several trials to assess fear-based behavior.
 
