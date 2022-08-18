@@ -129,21 +129,21 @@ TukeyHSD(ANOVA$nOpen, conf.level = .95)
 ```
 
 ```{r}
-#Hide
+#nClosed
 ANOVA$nClosed = aov(nClosed ~ Status, data = test)
 summary(ANOVA$nClosed)
 TukeyHSD(ANOVA$nClosed, conf.level = .95)
 ```
 
 ```{r}
-#Exit
+#tOpen
 ANOVA$tOpen = aov(tOpen ~ Status, data = test)
 summary(ANOVA$tOpen)
 TukeyHSD(ANOVA$tOpen, conf.level = .95)
 ```
 
 ```{r}
-#Exit
+#tClosed
 ANOVA$tClosed = aov(tClosed ~ Status, data = test)
 summary(ANOVA$tClosed)
 TukeyHSD(ANOVA$tClosed, conf.level = .95)
@@ -186,9 +186,5 @@ SIGNIFICANTLY DIFFERENT!
 ```{r}
 #Arm entries 
 t.test(test$nOpen, test$nClosed, paired = T)
-```
-
-```{r}
-lm(cbind(tOpen, tClosed) ~ Status, data = test)
 ```
 
